@@ -7,7 +7,8 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 func (e *Exporter) handleMetricsSentinel(ch chan<- prometheus.Metric, fieldKey string, fieldValue string) bool {
@@ -37,16 +38,16 @@ func (e *Exporter) handleMetricsSentinel(ch chan<- prometheus.Metric, fieldKey s
 func (e *Exporter) extractSentinelMetrics(ch chan<- prometheus.Metric, c redis.Conn) {
 	masterDetails, err := redis.Values(doRedisCmd(c, "SENTINEL", "MASTERS"))
 	if err != nil {
-		log.Debugf("Error getting sentinel master details %s:", err)
+		log.V(5).Infof("Error getting sentinel master details %s:", err)
 		return
 	}
 
-	log.Debugf("Sentinel master details: %#v", masterDetails)
+	log.V(5).Infof("Sentinel master details: %#v", masterDetails)
 
 	for _, masterDetail := range masterDetails {
 		masterDetailMap, err := redis.StringMap(masterDetail, nil)
 		if err != nil {
-			log.Debugf("Error getting masterDetailmap from masterDetail: %s, err: %s", masterDetail, err)
+			log.V(5).Infof("Error getting masterDetailmap from masterDetail: %s, err: %s", masterDetail, err)
 			continue
 		}
 
@@ -67,11 +68,11 @@ func (e *Exporter) extractSentinelMetrics(ch chan<- prometheus.Metric, c redis.C
 		masterAddr := masterIp + ":" + masterPort
 
 		sentinelDetails, _ := redis.Values(doRedisCmd(c, "SENTINEL", "SENTINELS", masterName))
-		log.Debugf("Sentinel details for master %s: %s", masterName, sentinelDetails)
+		log.V(5).Infof("Sentinel details for master %s: %s", masterName, sentinelDetails)
 		e.processSentinelSentinels(ch, sentinelDetails, masterName, masterAddr)
 
 		slaveDetails, _ := redis.Values(doRedisCmd(c, "SENTINEL", "SLAVES", masterName))
-		log.Debugf("Slave details for master %s: %s", masterName, slaveDetails)
+		log.V(5).Infof("Slave details for master %s: %s", masterName, slaveDetails)
 		e.processSentinelSlaves(ch, slaveDetails, masterName, masterAddr)
 	}
 }
@@ -84,7 +85,7 @@ func (e *Exporter) processSentinelSentinels(ch chan<- prometheus.Metric, sentine
 	for _, sentinelDetail := range sentinelDetails {
 		sentinelDetailMap, err := redis.StringMap(sentinelDetail, nil)
 		if err != nil {
-			log.Debugf("Error getting sentinelDetailMap from sentinelDetail: %s, err: %s", sentinelDetail, err)
+			log.V(5).Infof("Error getting sentinelDetailMap from sentinelDetail: %s, err: %s", sentinelDetail, err)
 			continue
 		}
 
@@ -108,7 +109,7 @@ func (e *Exporter) processSentinelSlaves(ch chan<- prometheus.Metric, slaveDetai
 	for _, slaveDetail := range slaveDetails {
 		slaveDetailMap, err := redis.StringMap(slaveDetail, nil)
 		if err != nil {
-			log.Debugf("Error getting slavedetailMap from slaveDetail: %s, err: %s", slaveDetail, err)
+			log.V(5).Infof("Error getting slavedetailMap from slaveDetail: %s, err: %s", slaveDetail, err)
 			continue
 		}
 
@@ -152,12 +153,12 @@ func parseSentinelMasterString(master string, masterInfo string) (masterName str
 	masterAddr = matchedMasterInfo["address"]
 	masterSlaves, err := strconv.ParseFloat(matchedMasterInfo["slaves"], 64)
 	if err != nil {
-		log.Debugf("parseSentinelMasterString(): couldn't parse slaves value, got: %s, err: %s", matchedMasterInfo["slaves"], err)
+		log.V(5).Infof("parseSentinelMasterString(): couldn't parse slaves value, got: %s, err: %s", matchedMasterInfo["slaves"], err)
 		return
 	}
 	masterSentinels, err = strconv.ParseFloat(matchedMasterInfo["sentinels"], 64)
 	if err != nil {
-		log.Debugf("parseSentinelMasterString(): couldn't parse sentinels value, got: %s, err: %s", matchedMasterInfo["sentinels"], err)
+		log.V(5).Infof("parseSentinelMasterString(): couldn't parse sentinels value, got: %s, err: %s", matchedMasterInfo["sentinels"], err)
 		return
 	}
 	ok = true

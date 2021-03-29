@@ -7,7 +7,8 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 type scanStreamFixture struct {
@@ -293,8 +294,8 @@ func TestExtractStreamMetrics(t *testing.T) {
 
 	for m := range chM {
 		for k := range want {
-			log.Debugf("metric: %s", m.Desc().String())
-			log.Debugf("want: %s", k)
+			log.V(5).Infof("metric: %s", m.Desc().String())
+			log.V(5).Infof("want: %s", k)
 			if strings.Contains(m.Desc().String(), k) {
 				want[k] = true
 			}

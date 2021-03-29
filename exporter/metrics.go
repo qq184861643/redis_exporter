@@ -6,7 +6,8 @@ import (
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 var metricNameRE = regexp.MustCompile(`[^a-zA-Z0-9_]`)
@@ -58,7 +59,7 @@ func (e *Exporter) parseAndRegisterConstMetric(ch chan<- prometheus.Metric, fiel
 
 	}
 	if err != nil {
-		log.Debugf("couldn't parse %s, err: %s", fieldValue, err)
+		log.V(5).Infof("couldn't parse %s, err: %s", fieldValue, err)
 	}
 
 	t := prometheus.GaugeValue

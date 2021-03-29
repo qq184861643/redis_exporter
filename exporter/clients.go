@@ -6,7 +6,8 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 /*
@@ -22,7 +23,7 @@ func parseClientListString(clientInfo string) ([]string, bool) {
 	for _, kvPart := range strings.Split(clientInfo, " ") {
 		vPart := strings.Split(kvPart, "=")
 		if len(vPart) != 2 {
-			log.Debugf("Invalid format for client list string, got: %s", kvPart)
+			log.V(5).Infof("Invalid format for client list string, got: %s", kvPart)
 			return nil, false
 		}
 		connectedClient[vPart[0]] = vPart[1]

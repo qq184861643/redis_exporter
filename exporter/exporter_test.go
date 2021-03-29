@@ -21,7 +21,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	dto "github.com/prometheus/client_model/go"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 const (

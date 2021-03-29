@@ -5,7 +5,8 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 var logErrOnce sync.Once
@@ -15,12 +16,12 @@ func (e *Exporter) extractLatencyMetrics(ch chan<- prometheus.Metric, c redis.Co
 	if err != nil {
 		/*
 			this can be a little too verbose, see e.g. https://github.com/oliver006/redis_exporter/issues/495
-			we're logging this only once as an Error and always as Debugf()
+			we're logging this only once as an Error and always as V(5).Infof()
 		*/
 		logErrOnce.Do(func() {
 			log.Errorf("WARNING, LOGGED ONCE ONLY: cmd LATENCY LATEST, err: %s", err)
 		})
-		log.Debugf("cmd LATENCY LATEST, err: %s", err)
+		log.V(5).Infof("cmd LATENCY LATEST, err: %s", err)
 		return
 	}
 

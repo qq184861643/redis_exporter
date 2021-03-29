@@ -5,7 +5,8 @@ import (
 	"strings"
 
 	"github.com/gomodule/redigo/redis"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 func (e *Exporter) connectToRedis() (redis.Conn, error) {
@@ -38,15 +39,15 @@ func (e *Exporter) connectToRedis() (redis.Conn, error) {
 		options = append(options, redis.DialPassword(e.options.PasswordMap[uri]))
 	}
 
-	log.Debugf("Trying DialURL(): %s", uri)
+	log.V(5).Infof("Trying DialURL(): %s", uri)
 	c, err := redis.DialURL(uri, options...)
 	if err != nil {
-		log.Debugf("DialURL() failed, err: %s", err)
+		log.V(5).Infof("DialURL() failed, err: %s", err)
 		if frags := strings.Split(e.redisAddr, "://"); len(frags) == 2 {
-			log.Debugf("Trying: Dial(): %s %s", frags[0], frags[1])
+			log.V(5).Infof("Trying: Dial(): %s %s", frags[0], frags[1])
 			c, err = redis.Dial(frags[0], frags[1], options...)
 		} else {
-			log.Debugf("Trying: Dial(): tcp %s", e.redisAddr)
+			log.V(5).Infof("Trying: Dial(): tcp %s", e.redisAddr)
 			c, err = redis.Dial("tcp", e.redisAddr, options...)
 		}
 	}
@@ -54,11 +55,11 @@ func (e *Exporter) connectToRedis() (redis.Conn, error) {
 }
 
 func doRedisCmd(c redis.Conn, cmd string, args ...interface{}) (interface{}, error) {
-	log.Debugf("c.Do() - running command: %s %s", cmd, args)
+	log.V(5).Infof("c.Do() - running command: %s %s", cmd, args)
 	res, err := c.Do(cmd, args...)
 	if err != nil {
-		log.Debugf("c.Do() - err: %s", err)
+		log.V(5).Infof("c.Do() - err: %s", err)
 	}
-	log.Debugf("c.Do() - done")
+	log.V(5).Infof("c.Do() - done")
 	return res, err
 }

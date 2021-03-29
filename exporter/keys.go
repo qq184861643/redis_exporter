@@ -8,7 +8,8 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 type dbKeyPair struct {
@@ -121,18 +122,18 @@ func (e *Exporter) extractCheckKeyMetrics(ch chan<- prometheus.Metric, c redis.C
 		log.Errorf("Couldn't parse check-keys: %#v", err)
 		return
 	}
-	log.Debugf("keys: %#v", keys)
+	log.V(5).Infof("keys: %#v", keys)
 
 	singleKeys, err := parseKeyArg(e.options.CheckSingleKeys)
 	if err != nil {
 		log.Errorf("Couldn't parse check-single-keys: %#v", err)
 		return
 	}
-	log.Debugf("e.singleKeys: %#v", singleKeys)
+	log.V(5).Infof("e.singleKeys: %#v", singleKeys)
 
 	allKeys := append([]dbKeyPair{}, singleKeys...)
 
-	log.Debugf("e.keys: %#v", keys)
+	log.V(5).Infof("e.keys: %#v", keys)
 	scannedKeys, err := getKeysFromPatterns(c, keys)
 	if err != nil {
 		log.Errorf("Error expanding key patterns: %#v", err)
@@ -140,10 +141,10 @@ func (e *Exporter) extractCheckKeyMetrics(ch chan<- prometheus.Metric, c redis.C
 		allKeys = append(allKeys, scannedKeys...)
 	}
 
-	log.Debugf("allKeys: %#v", allKeys)
+	log.V(5).Infof("allKeys: %#v", allKeys)
 	for _, k := range allKeys {
 		if _, err := doRedisCmd(c, "SELECT", k.db); err != nil {
-			log.Debugf("Couldn't select database %#v when getting key info.", k.db)
+			log.V(5).Infof("Couldn't select database %#v when getting key info.", k.db)
 			continue
 		}
 
@@ -151,7 +152,7 @@ func (e *Exporter) extractCheckKeyMetrics(ch chan<- prometheus.Metric, c redis.C
 		info, err := getKeyInfo(c, k.key)
 		switch err {
 		case errKeyTypeNotFound:
-			log.Debugf("Key '%s' not found when trying to get type and size: using default '0.0'", k.key)
+			log.V(5).Infof("Key '%s' not found when trying to get type and size: using default '0.0'", k.key)
 			e.registerConstMetricGauge(ch, "key_size", 0.0, dbLabel, k.key)
 		case nil:
 			e.registerConstMetricGauge(ch, "key_size", info.size, dbLabel, k.key)
@@ -175,7 +176,7 @@ func (e *Exporter) extractCountKeysMetrics(ch chan<- prometheus.Metric, c redis.
 
 	for _, k := range cntKeys {
 		if _, err := doRedisCmd(c, "SELECT", k.db); err != nil {
-			log.Debugf("Couldn't select database '%s' when getting stream info", k.db)
+			log.V(5).Infof("Couldn't select database '%s' when getting stream info", k.db)
 			continue
 		}
 		cnt, err := scanForKeyCount(c, k.key)

@@ -14,7 +14,8 @@ import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 type BuildInfo struct {
@@ -79,7 +80,7 @@ type Options struct {
 
 // NewRedisExporter returns a new exporter of Redis metrics.
 func NewRedisExporter(redisURI string, opts Options) (*Exporter, error) {
-	log.Debugf("NewRedisExporter options: %#v", opts)
+	log.V(5).Infof("NewRedisExporter options: %#v", opts)
 
 	e := &Exporter{
 		redisAddr: redisURI,
@@ -275,31 +276,31 @@ func NewRedisExporter(redisURI string, opts Options) (*Exporter, error) {
 	if keys, err := parseKeyArg(opts.CheckKeys); err != nil {
 		return nil, fmt.Errorf("couldn't parse check-keys: %s", err)
 	} else {
-		log.Debugf("keys: %#v", keys)
+		log.V(5).Infof("keys: %#v", keys)
 	}
 
 	if singleKeys, err := parseKeyArg(opts.CheckSingleKeys); err != nil {
 		return nil, fmt.Errorf("couldn't parse check-single-keys: %s", err)
 	} else {
-		log.Debugf("singleKeys: %#v", singleKeys)
+		log.V(5).Infof("singleKeys: %#v", singleKeys)
 	}
 
 	if streams, err := parseKeyArg(opts.CheckStreams); err != nil {
 		return nil, fmt.Errorf("couldn't parse check-streams: %s", err)
 	} else {
-		log.Debugf("streams: %#v", streams)
+		log.V(5).Infof("streams: %#v", streams)
 	}
 
 	if singleStreams, err := parseKeyArg(opts.CheckSingleStreams); err != nil {
 		return nil, fmt.Errorf("couldn't parse check-single-streams: %s", err)
 	} else {
-		log.Debugf("singleStreams: %#v", singleStreams)
+		log.V(5).Infof("singleStreams: %#v", singleStreams)
 	}
 
 	if countKeys, err := parseKeyArg(opts.CountKeys); err != nil {
 		return nil, fmt.Errorf("couldn't parse count-keys: %s", err)
 	} else {
-		log.Debugf("countKeys: %#v", countKeys)
+		log.V(5).Infof("countKeys: %#v", countKeys)
 	}
 
 	if opts.InclSystemMetrics {
@@ -477,7 +478,7 @@ func (e *Exporter) extractConfigMetrics(ch chan<- prometheus.Metric, config []st
 }
 
 func (e *Exporter) scrapeRedisHost(ch chan<- prometheus.Metric) error {
-	defer log.Debugf("scrapeRedisHost() done")
+	defer log.V(5).Infof("scrapeRedisHost() done")
 
 	startTime := time.Now()
 	c, err := e.connectToRedis()
@@ -486,13 +487,13 @@ func (e *Exporter) scrapeRedisHost(ch chan<- prometheus.Metric) error {
 
 	if err != nil {
 		log.Errorf("Couldn't connect to redis instance")
-		log.Debugf("connectToRedis( %s ) err: %s", e.redisAddr, err)
+		log.V(5).Infof("connectToRedis( %s ) err: %s", e.redisAddr, err)
 		return err
 	}
 	defer c.Close()
 
-	log.Debugf("connected to: %s", e.redisAddr)
-	log.Debugf("connecting took %f seconds", connectTookSeconds)
+	log.V(5).Infof("connected to: %s", e.redisAddr)
+	log.V(5).Infof("connecting took %f seconds", connectTookSeconds)
 
 	if e.options.PingOnConnect {
 		startTime := time.Now()
@@ -502,7 +503,7 @@ func (e *Exporter) scrapeRedisHost(ch chan<- prometheus.Metric) error {
 		} else {
 			pingTookSeconds := time.Since(startTime).Seconds()
 			e.registerConstMetricGauge(ch, "exporter_last_scrape_ping_time_seconds", pingTookSeconds)
-			log.Debugf("PING took %f seconds", pingTookSeconds)
+			log.V(5).Infof("PING took %f seconds", pingTookSeconds)
 		}
 	}
 
@@ -514,26 +515,26 @@ func (e *Exporter) scrapeRedisHost(ch chan<- prometheus.Metric) error {
 
 	dbCount := 0
 	if config, err := redis.Strings(doRedisCmd(c, e.options.ConfigCommandName, "GET", "*")); err == nil {
-		log.Debugf("Redis CONFIG GET * result: [%#v]", config)
+		log.V(5).Infof("Redis CONFIG GET * result: [%#v]", config)
 		dbCount, err = e.extractConfigMetrics(ch, config)
 		if err != nil {
 			log.Errorf("Redis CONFIG err: %s", err)
 			return err
 		}
 	} else {
-		log.Debugf("Redis CONFIG err: %s", err)
+		log.V(5).Infof("Redis CONFIG err: %s", err)
 	}
 
 	infoAll, err := redis.String(doRedisCmd(c, "INFO", "ALL"))
-	if err != nil {
-		log.Debugf("Redis INFO ALL err: %s", err)
+	if err != nil || infoAll == "" {
+		log.V(5).Infof("Redis INFO ALL err: %s", err)
 		infoAll, err = redis.String(doRedisCmd(c, "INFO"))
 		if err != nil {
 			log.Errorf("Redis INFO err: %s", err)
 			return err
 		}
 	}
-	log.Debugf("Redis INFO ALL result: [%#v]", infoAll)
+	log.V(5).Infof("Redis INFO ALL result: [%#v]", infoAll)
 
 	if strings.Contains(infoAll, "cluster_enabled:1") {
 		if clusterInfo, err := redis.String(doRedisCmd(c, "CLUSTER", "INFO")); err == nil {
@@ -551,7 +552,7 @@ func (e *Exporter) scrapeRedisHost(ch chan<- prometheus.Metric) error {
 		dbCount = 16
 	}
 
-	log.Debugf("dbCount: %d", dbCount)
+	log.V(5).Infof("dbCount: %d", dbCount)
 
 	e.extractInfoMetrics(ch, infoAll, dbCount)
 

@@ -3,7 +3,8 @@ package exporter
 import (
 	"github.com/gomodule/redigo/redis"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 // All fields of the streamInfo struct must be exported
@@ -45,7 +46,7 @@ func getStreamInfo(c redis.Conn, key string) (*streamInfo, error) {
 		return nil, err
 	}
 
-	log.Debugf("stream: %#v", &stream)
+	log.V(5).Infof("stream: %#v", &stream)
 	return &stream, nil
 }
 
@@ -62,7 +63,7 @@ func scanStreamGroups(c redis.Conn, stream string) ([]streamGroupsInfo, error) {
 			log.Errorf("Couldn't convert group values for stream '%s': %s", stream, err)
 			continue
 		}
-		log.Debugf("streamGroupsInfo value: %#v", v)
+		log.V(5).Infof("streamGroupsInfo value: %#v", v)
 
 		var group streamGroupsInfo
 		if err := redis.ScanStruct(v, &group); err != nil {
@@ -78,7 +79,7 @@ func scanStreamGroups(c redis.Conn, stream string) ([]streamGroupsInfo, error) {
 		result = append(result, group)
 	}
 
-	log.Debugf("groups: %v", result)
+	log.V(5).Infof("groups: %v", result)
 	return result, nil
 }
 
@@ -96,7 +97,7 @@ func scanStreamGroupConsumers(c redis.Conn, stream string, group string) ([]stre
 			log.Errorf("Couldn't convert consumer values for group '%s' in stream '%s': %s", group, stream, err)
 			continue
 		}
-		log.Debugf("streamGroupConsumersInfo value: %#v", v)
+		log.V(5).Infof("streamGroupConsumersInfo value: %#v", v)
 
 		var consumer streamGroupConsumersInfo
 		if err := redis.ScanStruct(v, &consumer); err != nil {
@@ -107,7 +108,7 @@ func scanStreamGroupConsumers(c redis.Conn, stream string, group string) ([]stre
 		result = append(result, consumer)
 	}
 
-	log.Debugf("consumers: %v", result)
+	log.V(5).Infof("consumers: %v", result)
 	return result, nil
 }
 
@@ -132,10 +133,10 @@ func (e *Exporter) extractStreamMetrics(ch chan<- prometheus.Metric, c redis.Con
 		allStreams = append(allStreams, scannedStreams...)
 	}
 
-	log.Debugf("allStreams: %#v", allStreams)
+	log.V(5).Infof("allStreams: %#v", allStreams)
 	for _, k := range allStreams {
 		if _, err := doRedisCmd(c, "SELECT", k.db); err != nil {
-			log.Debugf("Couldn't select database '%s' when getting stream info", k.db)
+			log.V(5).Infof("Couldn't select database '%s' when getting stream info", k.db)
 			continue
 		}
 		info, err := getStreamInfo(c, k.key)

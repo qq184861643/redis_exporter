@@ -14,7 +14,8 @@ import (
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 func TestHTTPScrapeMetricsEndpoints(t *testing.T) {
@@ -283,7 +284,7 @@ func downloadURL(t *testing.T, u string) string {
 }
 
 func downloadURLWithStatusCode(t *testing.T, u string) (int, string) {
-	log.Debugf("downloadURL() %s", u)
+	log.V(5).Infof("downloadURL() %s", u)
 
 	resp, err := http.Get(u)
 	if err != nil {

@@ -9,7 +9,8 @@ import (
 	"testing"
 
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 func TestKeyspaceStringParser(t *testing.T) {
@@ -129,7 +130,7 @@ func TestClusterMaster(t *testing.T) {
 	}()
 
 	body := downloadURL(t, ts.URL+"/metrics")
-	log.Debugf("master - body: %s", body)
+	log.V(5).Infof("master - body: %s", body)
 	for _, want := range []string{
 		"test_instance_info{",
 		"test_master_repl_offset",
@@ -157,7 +158,7 @@ func TestClusterSlave(t *testing.T) {
 	}()
 
 	body := downloadURL(t, ts.URL+"/metrics")
-	log.Debugf("slave - body: %s", body)
+	log.V(5).Infof("slave - body: %s", body)
 	for _, want := range []string{
 		"test_instance_info",
 		"test_master_last_io_seconds",

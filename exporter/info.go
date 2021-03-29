@@ -9,7 +9,8 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 func extractVal(s string) (val float64, err error) {
@@ -34,10 +35,10 @@ func (e *Exporter) extractInfoMetrics(ch chan<- prometheus.Metric, info string, 
 	masterPort := ""
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		log.Debugf("info: %s", line)
+		log.V(5).Infof("info: %s", line)
 		if len(line) > 0 && strings.HasPrefix(line, "# ") {
 			fieldClass = line[2:]
-			log.Debugf("set fieldClass: %s", fieldClass)
+			log.V(5).Infof("set fieldClass: %s", fieldClass)
 			continue
 		}
 
@@ -128,7 +129,7 @@ func (e *Exporter) extractClusterInfoMetrics(ch chan<- prometheus.Metric, info s
 	lines := strings.Split(info, "\r\n")
 
 	for _, line := range lines {
-		log.Debugf("info: %s", line)
+		log.V(5).Infof("info: %s", line)
 
 		split := strings.Split(line, ":")
 		if len(split) != 2 {
@@ -148,33 +149,33 @@ func (e *Exporter) extractClusterInfoMetrics(ch chan<- prometheus.Metric, info s
 	valid example: db0:keys=1,expires=0,avg_ttl=0
 */
 func parseDBKeyspaceString(inputKey string, inputVal string) (keysTotal float64, keysExpiringTotal float64, avgTTL float64, ok bool) {
-	log.Debugf("parseDBKeyspaceString inputKey: [%s] inputVal: [%s]", inputKey, inputVal)
+	log.V(5).Infof("parseDBKeyspaceString inputKey: [%s] inputVal: [%s]", inputKey, inputVal)
 
 	if !strings.HasPrefix(inputKey, "db") {
-		log.Debugf("parseDBKeyspaceString inputKey not starting with 'db': [%s]", inputKey)
+		log.V(5).Infof("parseDBKeyspaceString inputKey not starting with 'db': [%s]", inputKey)
 		return
 	}
 
 	split := strings.Split(inputVal, ",")
 	if len(split) != 3 && len(split) != 2 {
-		log.Debugf("parseDBKeyspaceString strings.Split(inputVal) invalid: %#v", split)
+		log.V(5).Infof("parseDBKeyspaceString strings.Split(inputVal) invalid: %#v", split)
 		return
 	}
 
 	var err error
 	if keysTotal, err = extractVal(split[0]); err != nil {
-		log.Debugf("parseDBKeyspaceString extractVal(split[0]) invalid, err: %s", err)
+		log.V(5).Infof("parseDBKeyspaceString extractVal(split[0]) invalid, err: %s", err)
 		return
 	}
 	if keysExpiringTotal, err = extractVal(split[1]); err != nil {
-		log.Debugf("parseDBKeyspaceString extractVal(split[1]) invalid, err: %s", err)
+		log.V(5).Infof("parseDBKeyspaceString extractVal(split[1]) invalid, err: %s", err)
 		return
 	}
 
 	avgTTL = -1
 	if len(split) > 2 {
 		if avgTTL, err = extractVal(split[2]); err != nil {
-			log.Debugf("parseDBKeyspaceString extractVal(split[2]) invalid, err: %s", err)
+			log.V(5).Infof("parseDBKeyspaceString extractVal(split[2]) invalid, err: %s", err)
 			return
 		}
 		avgTTL /= 1000
@@ -197,14 +198,14 @@ func parseConnectedSlaveString(slaveName string, keyValues string) (offset float
 	for _, kvPart := range strings.Split(keyValues, ",") {
 		x := strings.Split(kvPart, "=")
 		if len(x) != 2 {
-			log.Debugf("Invalid format for connected slave string, got: %s", kvPart)
+			log.V(5).Infof("Invalid format for connected slave string, got: %s", kvPart)
 			return
 		}
 		connectedkeyValues[x[0]] = x[1]
 	}
 	offset, err := strconv.ParseFloat(connectedkeyValues["offset"], 64)
 	if err != nil {
-		log.Debugf("Can not parse connected slave offset, got: %s", connectedkeyValues["offset"])
+		log.V(5).Infof("Can not parse connected slave offset, got: %s", connectedkeyValues["offset"])
 		return
 	}
 
@@ -214,7 +215,7 @@ func parseConnectedSlaveString(slaveName string, keyValues string) (offset float
 	} else {
 		lag, err = strconv.ParseFloat(lagStr, 64)
 		if err != nil {
-			log.Debugf("Can not parse connected slave lag, got: %s", lagStr)
+			log.V(5).Infof("Can not parse connected slave lag, got: %s", lagStr)
 			return
 		}
 	}

@@ -12,7 +12,8 @@ import (
 
 	"github.com/gomodule/redigo/redis"
 	"github.com/prometheus/client_golang/prometheus"
-	log "github.com/sirupsen/logrus"
+	//log "github.com/sirupsen/logrus"
+	log "github.com/golang/glog"
 )
 
 func TestKeyValuesAndSizes(t *testing.T) {
@@ -346,7 +347,7 @@ func TestKeyValueInvalidDB(t *testing.T) {
 				}
 			}
 		default:
-			log.Debugf("default: m: %#v", m)
+			log.V(5).Infof("default: m: %#v", m)
 		}
 	}
 	for k, found := range dontWant {
