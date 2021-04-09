@@ -486,8 +486,7 @@ func (e *Exporter) scrapeRedisHost(ch chan<- prometheus.Metric) error {
 	e.registerConstMetricGauge(ch, "exporter_last_scrape_connect_time_seconds", connectTookSeconds)
 
 	if err != nil {
-		log.Errorf("Couldn't connect to redis instance")
-		log.V(5).Infof("connectToRedis( %s ) err: %s", e.redisAddr, err)
+		log.Errorf("Couldn't connect to redis instance (%s) err: %s", e.redisAddr, err)
 		return err
 	}
 	defer c.Close()
@@ -509,32 +508,32 @@ func (e *Exporter) scrapeRedisHost(ch chan<- prometheus.Metric) error {
 
 	if e.options.SetClientName {
 		if _, err := doRedisCmd(c, "CLIENT", "SETNAME", "redis_exporter"); err != nil {
-			log.Errorf("Couldn't set client name, err: %s", err)
+			log.Errorf("%s Couldn't set client name, err: %s", e.redisAddr, err)
 		}
 	}
 
 	dbCount := 0
 	if config, err := redis.Strings(doRedisCmd(c, e.options.ConfigCommandName, "GET", "*")); err == nil {
-		log.V(5).Infof("Redis CONFIG GET * result: [%#v]", config)
+		log.V(5).Infof("Redis (%s) CONFIG GET * result: [%#v]", e.redisAddr, config)
 		dbCount, err = e.extractConfigMetrics(ch, config)
 		if err != nil {
-			log.Errorf("Redis CONFIG err: %s", err)
+			log.Errorf("Redis (%s) CONFIG err: %s", e.redisAddr, err)
 			return err
 		}
 	} else {
-		log.V(5).Infof("Redis CONFIG err: %s", err)
+		log.V(5).Infof("Redis (%s) CONFIG err: %s", e.redisAddr, err)
 	}
 
 	infoAll, err := redis.String(doRedisCmd(c, "INFO", "ALL"))
 	if err != nil || infoAll == "" {
-		log.V(5).Infof("Redis INFO ALL err: %s", err)
+		log.V(5).Infof("Redis (%s) INFO ALL err: %s", e.redisAddr, err)
 		infoAll, err = redis.String(doRedisCmd(c, "INFO"))
 		if err != nil {
-			log.Errorf("Redis INFO err: %s", err)
+			log.Errorf("Redis (%s) INFO err: %s", e.redisAddr, err)
 			return err
 		}
 	}
-	log.V(5).Infof("Redis INFO ALL result: [%#v]", infoAll)
+	log.V(5).Infof("Redis (%s) INFO ALL result: [%#v]", e.redisAddr, infoAll)
 
 	if strings.Contains(infoAll, "cluster_enabled:1") {
 		if clusterInfo, err := redis.String(doRedisCmd(c, "CLUSTER", "INFO")); err == nil {
@@ -543,7 +542,7 @@ func (e *Exporter) scrapeRedisHost(ch chan<- prometheus.Metric) error {
 			// in cluster mode Redis only supports one database so no extra DB number padding needed
 			dbCount = 1
 		} else {
-			log.Errorf("Redis CLUSTER INFO err: %s", err)
+			log.Errorf("Redis (%s) CLUSTER INFO err: %s", e.redisAddr, err)
 		}
 	} else if dbCount == 0 {
 		// in non-cluster mode, if dbCount is zero then "CONFIG" failed to retrieve a valid
