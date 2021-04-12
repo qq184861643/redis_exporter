@@ -326,7 +326,7 @@ func NewRedisExporter(redisURI string, opts Options) (*Exporter, error) {
 		"db_keys":                                      {txt: "Total number of keys by DB", lbls: []string{"db"}},
 		"db_keys_expiring":                             {txt: "Total number of expiring keys by DB", lbls: []string{"db"}},
 		"exporter_last_scrape_error":                   {txt: "The last scrape error status.", lbls: []string{"err"}},
-		"instance_info":                                {txt: "Information about the Redis instance", lbls: []string{"role", "redis_version", "redis_build_id", "redis_mode", "os", "maxmemory_policy", "tcp_port", "run_id", "process_id"}},
+		"instance_info":                                {txt: "Information about the Redis instance", lbls: []string{"role", "redis_version", "redis_mode", "os", "maxmemory_policy", "config_file"}},
 		"key_group_count":                              {txt: `Count of keys in key group`, lbls: []string{"db", "key_group"}},
 		"key_group_memory_usage_bytes":                 {txt: `Total memory usage of key group in bytes`, lbls: []string{"db", "key_group"}},
 		"key_size":                                     {txt: `The length or size of "key"`, lbls: []string{"db", "key"}},
@@ -506,12 +506,6 @@ func (e *Exporter) scrapeRedisHost(ch chan<- prometheus.Metric) error {
 		}
 	}
 
-	if e.options.SetClientName {
-		if _, err := doRedisCmd(c, "CLIENT", "SETNAME", "redis_exporter"); err != nil {
-			log.Errorf("%s Couldn't set client name, err: %s", e.redisAddr, err)
-		}
-	}
-
 	dbCount := 0
 	if config, err := redis.Strings(doRedisCmd(c, e.options.ConfigCommandName, "GET", "*")); err == nil {
 		log.V(5).Infof("Redis (%s) CONFIG GET * result: [%#v]", e.redisAddr, config)
@@ -553,7 +547,14 @@ func (e *Exporter) scrapeRedisHost(ch chan<- prometheus.Metric) error {
 
 	log.V(5).Infof("dbCount: %d", dbCount)
 
-	e.extractInfoMetrics(ch, infoAll, dbCount)
+	redis_mode := e.extractInfoMetrics(ch, infoAll, dbCount)
+	if redis_mode == 0 {
+		if e.options.SetClientName {
+			if _, err := doRedisCmd(c, "CLIENT", "SETNAME", "redis_exporter"); err != nil {
+				log.Errorf("%s Couldn't set client name, err: %s", e.redisAddr, err)
+			}
+		}
+	}
 
 	e.extractLatencyMetrics(ch, c)
 

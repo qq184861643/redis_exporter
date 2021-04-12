@@ -25,7 +25,7 @@ func extractVal(s string) (val float64, err error) {
 	return
 }
 
-func (e *Exporter) extractInfoMetrics(ch chan<- prometheus.Metric, info string, dbCount int) {
+func (e *Exporter) extractInfoMetrics(ch chan<- prometheus.Metric, info string, dbCount int) int {
 	keyValues := map[string]string{}
 	handledDBs := map[string]bool{}
 
@@ -106,22 +106,28 @@ func (e *Exporter) extractInfoMetrics(ch chan<- prometheus.Metric, info string, 
 			e.registerConstMetricGauge(ch, "db_keys_expiring", 0, dbName)
 		}
 	}
-
-	e.registerConstMetricGauge(ch, "instance_info", 1,
-		keyValues["role"],
-		keyValues["redis_version"],
-		keyValues["redis_build_id"],
-		keyValues["redis_mode"],
-		keyValues["os"],
-		keyValues["maxmemory_policy"],
-		keyValues["tcp_port"], keyValues["run_id"], keyValues["process_id"],
-	)
+	master_val := 1.0
 
 	if keyValues["role"] == "slave" {
 		e.registerConstMetricGauge(ch, "slave_info", 1,
 			keyValues["master_host"],
 			keyValues["master_port"],
 			keyValues["slave_read_only"])
+		master_val = 0
+	}
+
+	e.registerConstMetricGauge(ch, "instance_info", master_val,
+		keyValues["role"],
+		keyValues["redis_version"],
+		keyValues["redis_mode"],
+		keyValues["os"],
+		keyValues["maxmemory_policy"],
+		keyValues["config_file"],
+	)
+	if keyValues["redis_mode"] == "sentinel" {
+		return 1
+	} else {
+		return 0
 	}
 }
 
